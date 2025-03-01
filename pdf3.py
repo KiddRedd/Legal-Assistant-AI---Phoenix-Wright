@@ -27,7 +27,7 @@ def convert_pdf_to_markdown(pdf_path):
     
     return '\n'.join(markdown)
 
-def chunk_legal_document(document_text, chunk_size=600, overlap=200):
+def chunk_legal_document(document_text, chunk_size=500, overlap=200):
     """
     Split a legal document into chunks with specified size and overlap.
     """
