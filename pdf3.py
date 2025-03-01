@@ -1,86 +1,89 @@
-import sys
+import fitz  # PyMuPDF
+import argparse
 import os
-import glob
-import pdfplumber  # Make sure this library is installed
-import logging
+import re
 
-# Setup basic logging configuration
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+def convert_pdf_to_markdown(pdf_path):
+    """
+    Convert a PDF file to Markdown format.
+    """
+    markdown = []
+    
+    with fitz.open(pdf_path) as doc:
+        for page_num, page in enumerate(doc, 1):
+            # Extract text and its coordinates
+            text = page.get_text("text")
+            
+            # Clean the text: remove special characters and extra spaces
+            text = re.sub(r'\s+', ' ', text)
+            text = text.replace("\n", " ")
+            text = re.sub(r' +', ' ', text)
+            text = re.sub(r'-', '', text)
+            text = re.sub(r'[.!?]+', '. ', text).strip()
+            
+            # Add page number and cleaned text to markdown
+            markdown.append(f"### Page {page_num}")
+            markdown.append(text)
+    
+    return '\n'.join(markdown)
 
-def convert_pdf_to_markdown(input_pdf):
-    """Converts a PDF file to Markdown text."""
-    try:
-        with pdfplumber.open(input_pdf) as pdf:
-            text = ""
-            for page in pdf.pages:
-                text += page.extract_text() + "\n"
-            return text.strip()
-    except Exception as e:
-        logging.error(f"PDF conversion error: {e}")
-        return None
-
-def save_to_file(markdown, output_path):
-    """Saves Markdown text to a file."""
-    try:
-        with open(output_path, 'w', encoding='utf-8') as f:
-            if markdown:
-                f.write(markdown)
-        logging.info(f"Saved to: {output_path}")
-    except IOError as e:
-        logging.error(f"Error saving file '{output_path}': {e}")
-
-def process_pdfs(pdf_file_paths):
-    """Processes PDF files and yields results for each."""
-    all_pdfs = []
-
-    # Collect all PDF files from specified paths
-    for path in pdf_file_paths:
-        if os.path.isfile(path) and path.lower().endswith('.pdf'):
-            all_pdfs.append(path)
-        elif os.path.isdir(path):
-            all_pdfs.extend(glob.glob(os.path.join(path, '*.pdf')))
+def chunk_legal_document(document_text, chunk_size=500, overlap=100):
+    """
+    Split a legal document into chunks with specified size and overlap.
+    """
+    # Split the text into paragraphs
+    paragraphs = re.findall(r'[^.?!]+[.?!]*', document_text)
+    
+    # Process each paragraph to create chunks
+    chunks = []
+    current_chunk = ""
+    
+    for para in paragraphs:
+        # Add paragraph to current chunk
+        new_content = current_chunk + " " + para
+        
+        # Check if the new content exceeds the chunk size
+        if len(new_content) > chunk_size:
+            # Split into smaller parts
+            words = new_content.split()
+            
+            # Create chunks with overlap
+            for i in range(0, len(words), chunk_size):
+                end = min(i + chunk_size, len(words))
+                
+                # Ensure there's overlap between chunks
+                if end - i > overlap:
+                    end = max(end - (overlap // 2) + 1, i)
+                
+                chunk = ' '.join(words[i:end])
+                chunks.append(chunk)
+            
+            current_chunk = ""  # Reset for next paragraph
+            
         else:
-            logging.warning(f"Invalid path: {path}. Skipping.")
-
-    total_files = len(all_pdfs)
-    processed_count = 0
-
-    if not all_pdfs:
-        logging.info("No PDF files found to process.")
-        return
-
-    for pdf_path in all_pdfs:
-        try:
-            processed_count += 1
-            base_name = os.path.basename(pdf_path)
-            dir_name = os.path.dirname(pdf_path)
-            output_dir = os.path.join(dir_name, "converted")
-            os.makedirs(output_dir, exist_ok=True)
-            output_name = os.path.splitext(base_name)[0] + ".md"
-            output_path = os.path.join(output_dir, output_name)
-
-            converted_text = convert_pdf_to_markdown(pdf_path)
-            if converted_text:
-                save_to_file(converted_text, output_path)
-                yield f"Successfully processed: {base_name}"
-            else:
-                logging.error(f"Failed to process: {base_name}")
-                yield f"Failed to process: {base_name}"
-
-        except Exception as e:
-            logging.exception(f"Exception during processing of file {pdf_path}: {e}")
-
-    logging.info(f"\nProcessed {processed_count} files.")
+            current_chunk = new_content
+    
+    return chunks
 
 def main():
-    """Main function to convert PDF files in given paths to Markdown."""
-    if len(sys.argv) < 2:
-        print("Usage: python pdf_to_markdown.py input1.pdf [input2.pdf] ...")
-        return
-
-    # Process each PDF and yield results
-    for result in process_pdfs(sys.argv[1:]):
-        print(result)
+    parser = argparse.ArgumentParser(description='Convert PDF to Markdown with legal document post-processing.')
+    parser.add_argument('-i', '--input', required=True, help='Path to the input PDF file')
+    parser.add_argument('-o', '--output', default='output.md', help='Name of the output Markdown file')
+    
+    args = parser.parse_args()
+    
+    # Convert PDF to Markdown
+    markdown_text = convert_pdf_to_markdown(args.input)
+    
+    # Apply chunking and overlapping for legal documents
+    chunks = chunk_legal_document(markdown_text)
+    
+    # Save the chunks to a file
+    with open(args.output, 'w', encoding='utf-8') as f:
+        for i, chunk in enumerate(chunks):
+            f.write(f"### Chunk {i+1}\n\n{chunk}\n")
+    
+    print(f"Conversion completed. Output saved to '{args.output}'")
 
 if __name__ == "__main__":
     main()
