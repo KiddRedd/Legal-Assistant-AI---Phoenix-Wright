@@ -1,4 +1,4 @@
-## Question How does family law address issues like custody and child support?
+## Question: How does family law address issues like custody and child support?
 
 ## Response
 
@@ -41,11 +41,13 @@ Family law addresses issues of custody and child support through structured lega
 These legal mechanisms ensure that children receive appropriate care and financial support while balancing the responsibilities of their parents. If there are circumstances leading to undue hardship, courts have the discretion to adjust support orders accordingly [source_id 0].
 
   
-  ## *--- Source ID O is CCQ-1991 in markdown. The AI found it within the knowledge base. 
   
+  ## // Some NOTES: 
+  ## *--- Source ID O is CCQ-1991 in markdown. The AI found it within the knowledge base. 
   ## ==== In the same chat, without changing context, I asked the following.
+  ## (I didn't have code of civil procedure in KB for now )
 
-## Question What are the steps for due process in Quebec? (I didn't have code of civil procedure in KB for now )
+## Question : What are the steps for due process in Quebec? 
 
 ## Response
 
