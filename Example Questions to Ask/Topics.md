@@ -1,4 +1,4 @@
-## Civil rights law – Assists individuals who deal with discrimination and their constitutional rights
+## Civil rights law – Assists individuals who deal with discrimination and their constitutionally protected rights
 
 ## Criminal law – Individual liberty issues that may be illegal by Canadian criminal codes
 
